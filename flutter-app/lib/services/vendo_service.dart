@@ -1536,31 +1536,6 @@ class VendoService {
     collect(a['echtzeitNotizen']);
     for (final h in halte.whereType<Map<String, dynamic>>()) {
       // See _parseTripFromZuglauf: stop-level notes live in `echtzeitNotizen`.
-      for (final halt in halte.whereType<Map<String, dynamic>>()) {
-        final ort = halt['ort'] as Map<String, dynamic>?;
-
-        AppLog.log('halt ${ort?['name']}', tag: 'vendo');
-
-        final auslastung = halt['auslastungsInfos'];
-
-        AppLog.log(
-          '  auslastungsInfos type: ${auslastung.runtimeType}',
-          tag: 'vendo',
-        );
-
-        if (auslastung is List) {
-          AppLog.log(
-            '  auslastungsInfos count: ${auslastung.length}',
-            tag: 'vendo',
-          );
-
-          for (final info in auslastung.take(3)) {
-            AppLog.log('  auslastung: $info', tag: 'vendo');
-          }
-        } else {
-          AppLog.log('  auslastungsInfos value: $auslastung', tag: 'vendo');
-        }
-      }
       collect(h['echtzeitNotizen']);
     }
 
