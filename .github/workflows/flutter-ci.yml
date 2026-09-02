@@ -88,18 +88,21 @@ jobs:
           token_format: access_token
           access_token_scopes: "https://www.googleapis.com/auth/cloud-platform"
 
-      - name: Test Firebase API authentication
+      - name: Upload APK to Firebase App Distribution
         env:
           ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
         run: |
           set -euo pipefail
 
-          echo "Testing Firebase App Distribution API authentication..."
+          APK="apk/app-release.apk"
 
           RESPONSE=$(curl --silent --show-error \
-            --request GET \
-            "https://firebaseappdistribution.googleapis.com/v1/projects/658602031061/apps/1:658602031061:android:f884fca4cf5d4b0ad6ef5c" \
+            --request POST \
+            "https://firebaseappdistribution.googleapis.com/upload/v1/projects/658602031061/apps/1:658602031061:android:f884fca4cf5d4b0ad6ef5c/releases:upload" \
             --header "Authorization: Bearer ${ACCESS_TOKEN}" \
-            --write-out "\nHTTP_STATUS:%{http_code}")
+            --header "X-Goog-Upload-Protocol: raw" \
+            --header "X-Goog-Upload-File-Name: app-release.apk" \
+            --header "Content-Type: application/octet-stream" \
+            --data-binary "@${APK}")
 
           echo "$RESPONSE"
