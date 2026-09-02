@@ -95,14 +95,75 @@ jobs:
           set -euo pipefail
 
           APK="apk/app-release.apk"
+          UPLOAD_URL="https://firebaseappdistribution.googleapis.com/upload/v1/projects/658602031061/apps/1:658602031061:android:f884fca4cf5d4b0ad6ef5c/releases:upload"
 
-          RESPONSE=$(curl --silent --show-error \
+          echo "Uploading APK to Firebase App Distribution..."
+
+          RESPONSE=$(curl --silent --show-error --fail-with-body \
             --request POST \
-            "https://firebaseappdistribution.googleapis.com/upload/v1/projects/658602031061/apps/1:658602031061:android:f884fca4cf5d4b0ad6ef5c/releases:upload" \
+            "${UPLOAD_URL}" \
             --header "Authorization: Bearer ${ACCESS_TOKEN}" \
             --header "X-Goog-Upload-Protocol: raw" \
             --header "X-Goog-Upload-File-Name: app-release.apk" \
             --header "Content-Type: application/octet-stream" \
             --data-binary "@${APK}")
 
+          echo "Upload response:"
           echo "$RESPONSE"
+
+          OPERATION_NAME=$(echo "$RESPONSE" | jq -r '.name // empty')
+
+          if [ -z "$OPERATION_NAME" ]; then
+            echo "ERROR: Firebase did not return an operation name."
+            exit 1
+          fi
+
+          echo "Firebase operation:"
+          echo "$OPERATION_NAME"
+
+          for i in {1..30}; do
+            echo "Checking Firebase upload status ($i/30)..."
+
+            OPERATION=$(curl --silent --show-error --fail-with-body \
+              --request GET \
+              "https://firebaseappdistribution.googleapis.com/v1/${OPERATION_NAME}" \
+              --header "Authorization: Bearer ${ACCESS_TOKEN}")
+
+            DONE=$(echo "$OPERATION" | jq -r '.done // false')
+
+            if [ "$DONE" = "true" ]; then
+              ERROR=$(echo "$OPERATION" | jq -r '.error.message // empty')
+
+              if [ -n "$ERROR" ]; then
+                echo "ERROR: Firebase upload failed:"
+                echo "$ERROR"
+                exit 1
+              fi
+
+              RELEASE_NAME=$(echo "$OPERATION" | jq -r '.response.release.name // empty')
+
+              if [ -z "$RELEASE_NAME" ]; then
+                echo "ERROR: Upload completed but no release was returned."
+                echo "Full response:"
+                echo "$OPERATION"
+                exit 1
+              fi
+
+              echo "SUCCESS: Firebase release created."
+              echo "Release: $RELEASE_NAME"
+
+              RELEASE_URI=$(echo "$OPERATION" | jq -r '.response.release.firebaseConsoleUri // empty')
+
+              if [ -n "$RELEASE_URI" ]; then
+                echo "Firebase Console:"
+                echo "$RELEASE_URI"
+              fi
+
+              exit 0
+            fi
+
+            sleep 5
+          done
+
+          echo "ERROR: Firebase upload did not complete within 150 seconds."
+          exit 1
