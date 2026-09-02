@@ -95,7 +95,7 @@ jobs:
           set -euo pipefail
 
           APK="apk/app-release.apk"
-          UPLOAD_URL="https://firebaseappdistribution.googleapis.com/upload/v1/projects/658602031061/apps/1:658602031061:android:f884fca4cf5d4b0ad6ef5c/releases:upload"
+          UPLOAD_URL="https://firebaseappdistribution.googleapis.com/upload/v1/projects/658602031061/apps/1:658602031061:android:5919c880474b2e10d6ef5c/releases:upload"
 
           echo "Uploading APK to Firebase App Distribution..."
 
